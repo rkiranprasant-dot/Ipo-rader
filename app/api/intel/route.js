@@ -76,7 +76,18 @@ export async function GET() {
     );
 
     if (!res.ok) {
-      return NextResponse.json({ error: `Upstream connection returned exception status ${res.status}` }, { status: res.status });
+      let errorMessage = `Upstream connection returned exception status ${res.status}`;
+      if (res.status === 404) {
+        errorMessage = "Gemini API endpoint not found (404). Check API URL and service availability.";
+      } else if (res.status === 401 || res.status === 403) {
+        errorMessage = "Authentication failed. Verify GEMINI_API_KEY is valid.";
+      } else if (res.status === 429) {
+        errorMessage = "Rate limit exceeded. Please try again later.";
+      } else if (res.status >= 500) {
+        errorMessage = "Gemini API service error. Please try again later.";
+      }
+      console.error(`API Error ${res.status}:`, errorMessage);
+      return NextResponse.json({ error: errorMessage }, { status: res.status });
     }
 
     const data = await res.json();
