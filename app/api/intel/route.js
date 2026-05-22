@@ -3,71 +3,115 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  // 🛡️ FALLBACK DATA: Ensures the dashboard is NEVER blank if the AI API fails, rate-limits, or hallucinates.
+  // 🛡️ FALLBACK DATA: Activates instantly if the free Gemini API hits a rate limit.
   const fallbackData = {
     confirmedIntelligence: [
-      { company: "Reddit, Inc.", headline: "Priced at top of range, strong retail demand heavily oversubscribed.", impact: "HIGH", stage: "Listed", region: "us", transactionType: "IPO", publishedAt: new Date().toISOString(), estimatedSize: "$748M", actualSize: "$748M", priceRange: "$31 - $34", exchange: "NYSE", sector: "Technology", filingLink: "https://www.sec.gov/edgar/browse/?CIK=1713445", isSpecialFocus: true },
-      { company: "Hyundai Motor India", headline: "Largest Indian IPO in history files draft red herring prospectus.", impact: "HIGH", stage: "Filed", region: "india", transactionType: "IPO", publishedAt: new Date().toISOString(), estimatedSize: "₹25,000 Cr", actualSize: null, priceRange: "TBD", exchange: "NSE", sector: "Automotive", filingLink: "https://www.sebi.gov.in/", isSpecialFocus: true },
-      { company: "Rubrik", headline: "SoftBank-backed data security firm prices IPO above target range.", impact: "MEDIUM", stage: "Pricing / Live", region: "us", transactionType: "IPO", publishedAt: new Date().toISOString(), estimatedSize: "$713M", actualSize: "$752M", priceRange: "$32", exchange: "NYSE", sector: "Cybersecurity", filingLink: "https://www.sec.gov/edgar/searchedgar/companysearch.html", isSpecialFocus: false },
-      { company: "CVC Capital Partners", headline: "European buyout firm launches highly anticipated Amsterdam listing.", impact: "HIGH", stage: "Listed", region: "eu", transactionType: "IPO", publishedAt: new Date().toISOString(), estimatedSize: "€2.0B", actualSize: "€2.3B", priceRange: "€14", exchange: "Euronext", sector: "Private Equity", filingLink: null, isSpecialFocus: false },
-      { company: "Bain Capital (Asia)", headline: "Exploring dual-listing strategies for major tech asset spin-offs.", impact: "LOW", stage: "Roadshow", region: "asia", transactionType: "Spin-off", publishedAt: new Date().toISOString(), estimatedSize: "$500M", actualSize: null, priceRange: "TBD", exchange: "HKEX", sector: "Finance", filingLink: null, isSpecialFocus: false },
-      { company: "Waystar", headline: "Data protection firm files S-1, targeting aggressive growth valuation.", impact: "MEDIUM", stage: "Filed", region: "us", transactionType: "IPO", publishedAt: new Date().toISOString(), estimatedSize: "$500M", actualSize: null, priceRange: "TBD", exchange: "NASDAQ", sector: "Software", filingLink: "https://www.sec.gov/", isSpecialFocus: false }
+      { 
+        company: "SpaceX", headline: "Files historic S-1 for Nasdaq listing targeting $1.75 Trillion valuation.", impact: "HIGH", stage: "S-1 Filed", region: "us", transactionType: "IPO", publishedAt: new Date().toISOString(), estimatedSize: "$75B", actualSize: null, priceRange: "TBD", exchange: "NASDAQ (SPCX)", sector: "Aerospace / Tech", isSpecialFocus: true,
+        latestFiling: { type: "S-1 Registration Statement", date: "2026-05-20", url: "https://www.sec.gov/edgar/searchedgar/companysearch.html" },
+        milestones: { announced: "2026-05-20", pricing: "Expected June 2026", closed: "TBD" },
+        recentNews: [{ date: "May 20", headline: "S-1 reveals massive AI and Starlink growth." }]
+      },
+      { 
+        company: "Hyundai Motor India", headline: "Largest Indian IPO files draft red herring prospectus.", impact: "HIGH", stage: "DRHP Filed", region: "india", transactionType: "IPO", publishedAt: new Date().toISOString(), estimatedSize: "₹25,000 Cr", actualSize: null, priceRange: "TBD", exchange: "NSE", sector: "Automotive", isSpecialFocus: true,
+        latestFiling: { type: "DRHP", date: "2024-06-14", url: "https://www.sebi.gov.in/" },
+        milestones: { announced: "2024-02-05", pricing: "Expected Q4", closed: "TBD" },
+        recentNews: [{ date: "Jun 15", headline: "Targets $30B valuation in record-breaking Mumbai listing." }]
+      },
+      { 
+        company: "Waystar", headline: "Data protection firm prices IPO, filing final prospectus.", impact: "MEDIUM", stage: "Live", region: "us", transactionType: "IPO", publishedAt: new Date().toISOString(), estimatedSize: "$500M", actualSize: "$967M", priceRange: "$21.00", exchange: "NASDAQ", sector: "Software", isSpecialFocus: false,
+        latestFiling: { type: "424B4 (Final Prospectus)", date: "2024-06-07", url: "https://www.sec.gov/edgar/browse/?CIK=1929820" },
+        milestones: { announced: "2023-08-10", pricing: "2024-06-06", closed: "2024-06-07" },
+        recentNews: [{ date: "Jun 06", headline: "Prices IPO exactly at the midpoint of $21 per share." }]
+      }
     ],
     rumorMill: [
-      { company: "Stripe", headline: "Rumored confidential S-1 filing continues to circulate amongst primary dealers.", source: "Bloomberg Sources", impact: "HIGH" },
-      { company: "SpaceX (Starlink)", headline: "Spin-off talks re-emerge for late 2026 listing.", source: "WSJ Unconfirmed", impact: "HIGH" }
+      { 
+        company: "Stripe", headline: "Tender offer values company at $65B, but IPO talks persist.", source: "Bloomberg Sources", impact: "HIGH",
+        latestFiling: { type: "None", date: "N/A", url: null },
+        milestones: { announced: "Rumored", pricing: "TBD", closed: "TBD" },
+        recentNews: [{ date: "Recent", headline: "Confidential filing rumors circulate amongst primary dealers." }]
+      }
     ],
     latestNews: [
-      { headline: "Global IPO market sees massive 32% surge in tech listings this quarter", source: "Reuters", impact: "HIGH" },
-      { headline: "SEBI tightens disclosure norms for SME segment listings", source: "Financial Times", impact: "MEDIUM" },
-      { headline: "European exchanges report highest pipeline backlog since 2021", source: "Euronext Updates", impact: "LOW" }
+      { headline: "SpaceX files S-1 for $1.75 Trillion valuation, largest tech IPO in history.", source: "Reuters", impact: "HIGH" },
+      { headline: "SEC ramps up scrutiny on AI-related disclosures in 424B4 filings.", source: "WSJ", impact: "MEDIUM" }
     ]
   };
 
   try {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return NextResponse.json(fallbackData); // Use fallback if no key
+    if (!apiKey) return NextResponse.json(fallbackData);
 
-    const prompt = `Act as an elite institutional-grade financial terminal mapping global equity developments.
-    Synthesize exactly 6 realistic, high-profile global IPOs (Recent, Upcoming, or Live), 2 rumored filings, and 3 major IPO market news items. Use real companies from 2024-2026.
+    const prompt = `Act as an elite institutional-grade financial data extraction terminal.
+    Your objective is 100% ACCURACY. Deep dive the live web, SEC EDGAR, SEBI, CNMV, and primary financial news to extract the absolute latest IPO data.
     
-    You MUST respond with a valid JSON object matching this blueprint exactly.
+    Synthesize exactly 5 high-profile global IPOs (Recent, Upcoming, or Live), 2 major rumor/confidential filings, and 3 global IPO macro news items.
+    
+    You MUST respond with a valid JSON object matching this blueprint exactly:
     {
       "confirmedIntelligence": [
         {
           "company": "Asset Name",
-          "headline": "Brief update on the IPO status",
+          "headline": "Brief, factual update on the IPO status",
           "impact": "HIGH", 
-          "stage": "Filed, Roadshow, Pricing, Live, or Listed",
+          "stage": "Pricing",
           "region": "us", 
           "transactionType": "IPO",
           "publishedAt": "2026-05-23T12:00:00Z",
-          "estimatedSize": "₹11,500 Cr",
+          "estimatedSize": "$1.5B",
           "actualSize": "$1.2B",
           "priceRange": "$45 - $50",
           "exchange": "NASDAQ",
           "sector": "Technology",
-          "filingLink": "https://www.sec.gov/edgar/searchedgar/companysearch.html",
-          "isSpecialFocus": true
+          "isSpecialFocus": true,
+          "latestFiling": {
+            "type": "424B4, 8-K, S-1/A, F-1, DRHP, or Prospectus",
+            "date": "2026-05-20",
+            "url": "https://www.sec.gov/edgar/..."
+          },
+          "milestones": {
+            "announced": "2026-01-10",
+            "pricing": "TBD",
+            "closed": "TBD"
+          },
+          "recentNews": [
+            { "date": "May 20", "headline": "Factual headline based on filing." }
+          ]
         }
       ],
-      "rumorMill": [ { "company": "Stripe", "headline": "Rumor details", "source": "Bloomberg", "impact": "MEDIUM" } ],
-      "latestNews": [ { "headline": "News detail", "source": "Reuters", "impact": "HIGH" } ]
+      "rumorMill": [
+        {
+          "company": "Company Name",
+          "headline": "Rumor details",
+          "source": "WSJ / Bloomberg",
+          "impact": "HIGH",
+          "latestFiling": { "type": "None", "date": "N/A", "url": null },
+          "milestones": { "announced": "Rumored", "pricing": "TBD", "closed": "TBD" },
+          "recentNews": [{ "date": "Recent", "headline": "Headline here." }]
+        }
+      ],
+      "latestNews": [ { "headline": "Macro news detail", "source": "Reuters", "impact": "HIGH" } ]
     }
     
-    CRITICAL RULES:
-    1. The "region" field MUST be strictly one of these exact lowercase words: "us", "india", "eu", "asia", "latam".
-    2. You MUST return exactly 6 items in confirmedIntelligence. Never return an empty array.
-    3. Make the data highly realistic based on recent global market events.`;
+    CRITICAL MANDATES FOR 100% ACCURACY:
+    1. ZERO HALLUCINATION: If a company has not officially filed a public document, it MUST go into "rumorMill".
+    2. LIVE WEB GROUNDING: Use Google Search to find the exact EDGAR CIK/Accession URL, SEBI PDF, or European Base Prospectus URL.
+    3. ACCURATE FILING TYPES: Accurately identify if the latest document is an S-1, an S-1/A, a 424B4, an 8-K, or a DRHP.
+    4. "region" MUST be strictly lowercase: "us", "india", "eu", "asia", "latam".`;
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-pro:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: "application/json", temperature: 0.5 }
+          tools: [{ googleSearch: {} }], // Enforces Web Search Grounding
+          generationConfig: { 
+            responseMimeType: "application/json", 
+            temperature: 0.1 
+          }
         })
       }
     );
@@ -78,16 +122,13 @@ export async function GET() {
     const rawText = data.candidates[0].content.parts[0].text;
     const parsedData = JSON.parse(rawText);
 
-    // Safety check: If the AI returns an empty array, force the fallback data
     if (!parsedData.confirmedIntelligence || parsedData.confirmedIntelligence.length === 0) {
       return NextResponse.json(fallbackData);
     }
-
     return NextResponse.json(parsedData);
 
   } catch (error) {
-    console.error("Using Fallback. Error:", error);
-    // If ANY error occurs (parsing, rate limit, fetch fail), return the beautiful fallback data
+    console.error("API Deep Dive Failed:", error);
     return NextResponse.json(fallbackData);
   }
 }
