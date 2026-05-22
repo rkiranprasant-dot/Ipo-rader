@@ -7,7 +7,7 @@ export async function GET() {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      return NextResponse.json({ error: "API Key missing" }, { status: 500 });
+      return NextResponse.json({ error: "API Key missing in configuration parameters" }, { status: 500 });
     }
 
     const prompt = `Act as an elite institutional-grade financial terminal mapping real-time equity developments for today's market session.
@@ -27,6 +27,7 @@ export async function GET() {
           "actualSize": "$1.2B",
           "priceRange": "$45 - $50",
           "exchange": "NASDAQ",
+          "sector": "Technology",
           "filingLink": "https://www.sec.gov/Archives/edgar/data/1234567/000119312521123456/d123456ds1.htm",
           "isSpecialFocus": true
         }
@@ -54,17 +55,18 @@ export async function GET() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          // This enables real-time Google Search grounding for accurate SEC links
           tools: [{ googleSearch: {} }],
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.1 // Lowered temperature to heavily penalize hallucinations
+            temperature: 0.1 
           }
         })
       }
     );
 
-    if (!res.ok) return NextResponse.json({ error: "Upstream error" }, { status: res.status });
+    if (!res.ok) {
+      return NextResponse.json({ error: `Upstream connection returned exception status ${res.status}` }, { status: res.status });
+    }
 
     const data = await res.json();
     const rawText = data.candidates[0].content.parts[0].text;
@@ -72,6 +74,7 @@ export async function GET() {
     return NextResponse.json(JSON.parse(rawText));
 
   } catch (error) {
-    return NextResponse.json({ error: "Processing failure" }, { status: 500 });
+    console.error("API Gateway processing failure:", error);
+    return NextResponse.json({ error: "System failed to unpack pipeline stream data parameters" }, { status: 500 });
   }
 }
