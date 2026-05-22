@@ -1,6 +1,6 @@
 "use client";
+export const dynamic = "force-dynamic"; // Add this line!
 import { useState, useEffect, useCallback } from "react";
-
 const T = { 
   bg: "#05050A", surface: "#0A0A14", card: "#12121D", cardHover: "#1A1A2A", 
   border: "#232336", borderHi: "#3A3A5A", text: "#FFFFFF", sub: "#A1A1B5", 
