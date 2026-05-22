@@ -61,5 +61,3 @@ export async function GET() {
     return NextResponse.json({ error: "Failed to generate intelligence data" }, { status: 500 });
   }
 }
-  }
-        }
