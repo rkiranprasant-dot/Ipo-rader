@@ -6,7 +6,8 @@ const T = {
   border: "#232336", borderHi: "#3A3A5A", text: "#FFFFFF", sub: "#A1A1B5", 
   muted: "#666680", accent: "#00E5FF", accentDim: "#00E5FF15", focus: "#FF00E5", 
   focusDim: "#FF00E515", high: "#FF3344", highDim: "#FF334415", 
-  med: "#FFB800", medDim: "#FFB80015", low: "#00C896", lowDim: "#00C89615" 
+  med: "#FFB800", medDim: "#FFB80015", low: "#00C896", lowDim: "#00C89615",
+  warning: "#FF8C00", warningDim: "#FF8C0015"
 };
 
 const REGIONS = [
@@ -23,7 +24,6 @@ const IMPACT = {
   LOW: { color: T.low, bg: T.lowDim, icon: "🟢" } 
 };
 
-// Formats UTC date string to Indian Standard Time (IST)
 const formatIST = (d) => { 
   try { 
     if(!d) return "—";
@@ -37,7 +37,7 @@ const formatIST = (d) => {
 export default function IPORadar() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("radar"); // 'radar', 'news', 'focus'
+  const [activeTab, setActiveTab] = useState("radar"); // 'radar', 'rumors', 'focus'
   const [region, setRegion] = useState("all");
 
   const load = useCallback(async (silent = false) => {
@@ -59,9 +59,9 @@ export default function IPORadar() {
     return () => clearInterval(rt); 
   }, [load]);
 
-  const intel = (data?.breakingIntelligence || []).filter(x => region === "all" || x.region === region);
-  const news = data?.latestNews || [];
-  const focusItems = (data?.breakingIntelligence || []).filter(x => x.impact === "HIGH" || x.isSpecialFocus);
+  const confirmed = (data?.confirmedIntelligence || []).filter(x => region === "all" || x.region === region);
+  const rumors = data?.rumorMill || [];
+  const focusItems = (data?.confirmedIntelligence || []).filter(x => x.impact === "HIGH" || x.isSpecialFocus);
 
   return (
     <div style={{ minHeight: "100vh", background: T.bg, color: T.text, fontFamily: "sans-serif", display: "flex", flexDirection: "column" }}>
@@ -71,19 +71,19 @@ export default function IPORadar() {
           <div style={{ fontSize: 24, fontWeight: 900, color: T.accent, letterSpacing: 1 }}>
             IPO RADAR <span style={{ color: T.text }}>PRO</span>
           </div>
-          <div style={{ fontSize: 11, color: T.muted, letterSpacing: 2, marginTop: 4 }}>GLOBAL OFFERING TERMINAL</div>
+          <div style={{ fontSize: 11, color: T.muted, letterSpacing: 2, marginTop: 4 }}>INSTITUTIONAL TERMINAL</div>
         </div>
         <div style={{ display: "flex", gap: 12 }}>
-          {["radar", "news", "focus"].map(t => (
+          {["radar", "rumors", "focus"].map(t => (
             <button key={t} onClick={() => setActiveTab(t)} style={{
-              background: activeTab === t ? T.accentDim : "transparent", 
-              color: activeTab === t ? T.accent : T.muted,
-              border: `1px solid ${activeTab === t ? T.accent : T.border}`, 
+              background: activeTab === t ? (t === 'rumors' ? T.warningDim : T.accentDim) : "transparent", 
+              color: activeTab === t ? (t === 'rumors' ? T.warning : T.accent) : T.muted,
+              border: `1px solid ${activeTab === t ? (t === 'rumors' ? T.warning : T.accent) : T.border}`, 
               padding: "8px 16px", borderRadius: 8,
               fontSize: 12, fontWeight: 700, cursor: "pointer", textTransform: "uppercase",
               transition: "all 0.2s ease"
             }}>
-              {t === "radar" ? "Live Radar" : t === "news" ? "Hot News" : "⭐ Market Movers"}
+              {t === "radar" ? "Confirmed Filings" : t === "rumors" ? "Rumor Mill" : "⭐ Market Movers"}
             </button>
           ))}
         </div>
@@ -93,11 +93,11 @@ export default function IPORadar() {
       <div style={{ padding: 24, flex: 1, overflowY: "auto" }}>
         {loading && !data ? (
           <div style={{ color: T.accent, textAlign: "center", marginTop: 100, fontSize: 14, animation: "pulse 1.5s infinite" }}>
-            Scanning global exchanges and regulatory filings...
+            Scanning global exchanges, executing web searches, and analyzing EDGAR filings...
           </div>
         ) : (
           <>
-            {/* TAB: RADAR */}
+            {/* TAB: CONFIRMED RADAR */}
             {activeTab === "radar" && (
               <div style={{ animation: "fadeUp 0.4s ease" }}>
                 <div style={{ display: "flex", gap: 8, marginBottom: 20, overflowX: "auto", paddingBottom: "10px" }}>
@@ -108,21 +108,27 @@ export default function IPORadar() {
                   ))}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: 16 }}>
-                  {intel.map((item, i) => <DataCard key={i} item={item} />)}
+                  {confirmed.map((item, i) => <DataCard key={i} item={item} />)}
+                  {confirmed.length === 0 && <div style={{ color: T.muted }}>No confirmed filings detected for this region.</div>}
                 </div>
               </div>
             )}
 
-            {/* TAB: HOT NEWS */}
-            {activeTab === "news" && (
+            {/* TAB: RUMOR MILL */}
+            {activeTab === "rumors" && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, maxWidth: 800, margin: "0 auto", animation: "fadeUp 0.4s ease" }}>
-                <h2 style={{ color: T.sub, marginBottom: 12 }}>Latest Filing Amendments & News</h2>
-                {news.map((n, i) => (
-                  <div key={i} style={{ background: T.surface, padding: 16, borderRadius: 12, borderLeft: `4px solid ${IMPACT[n.impact]?.color || T.accent}` }}>
-                    <div style={{ fontSize: 14, fontWeight: 700 }}>{n.headline}</div>
-                    <div style={{ fontSize: 11, color: T.muted, marginTop: 8 }}>{n.source} · Impact: {n.impact}</div>
+                <h2 style={{ color: T.warning, marginBottom: 12 }}>Unverified Rumors & Leaks</h2>
+                <div style={{ fontSize: 12, color: T.sub, marginBottom: 16, background: T.warningDim, padding: 12, borderRadius: 8, border: `1px solid ${T.warning}55` }}>
+                  ⚠️ Data below has not been substantiated by official regulatory filings. Treat as highly speculative.
+                </div>
+                {rumors.map((r, i) => (
+                  <div key={i} style={{ background: T.surface, padding: 16, borderRadius: 12, borderLeft: `4px solid ${T.warning}` }}>
+                    <div style={{ fontSize: 16, fontWeight: 900, color: T.text, marginBottom: 4 }}>{r.company}</div>
+                    <div style={{ fontSize: 13, color: T.sub, marginBottom: 8 }}>{r.headline}</div>
+                    <div style={{ fontSize: 11, color: T.muted }}>Source: <span style={{ color: T.text }}>{r.source}</span> · Expected Impact: {r.impact}</div>
                   </div>
                 ))}
+                {rumors.length === 0 && <div style={{ color: T.muted }}>The rumor mill is quiet right now.</div>}
               </div>
             )}
 
@@ -132,7 +138,7 @@ export default function IPORadar() {
                 <h2 style={{ color: T.focus, textShadow: `0 0 10px ${T.focusDim}`, marginBottom: 24 }}>🚀 Special Focus: Market Movers</h2>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: 20 }}>
                   {focusItems.map((item, i) => <DataCard key={i} item={item} specialFocus={true} />)}
-                  {focusItems.length === 0 && <div style={{color: T.muted}}>No high-impact movers detected in the current pipeline.</div>}
+                  {focusItems.length === 0 && <div style={{color: T.muted}}>No high-impact confirmed movers detected in the current pipeline.</div>}
                 </div>
               </div>
             )}
@@ -152,7 +158,7 @@ export default function IPORadar() {
 function DataCard({ item, specialFocus = false }) {
   const imp = IMPACT[item.impact] || IMPACT.LOW;
   const borderColor = specialFocus ? T.focus : T.borderHi;
-  const sizeToDisplay = item.actualSize ? item.actualSize : `${item.estimatedSize} (Est.)`;
+  const sizeToDisplay = item.actualSize ? item.actualSize : `${item.estimatedSize || "TBD"} (Est.)`;
 
   return (
     <div style={{ background: T.card, border: `1px solid ${borderColor}`, borderRadius: 16, padding: 20, boxShadow: specialFocus ? `0 4px 20px ${T.focusDim}` : "none", display: "flex", flexDirection: "column" }}>
@@ -186,7 +192,7 @@ function DataCard({ item, specialFocus = false }) {
       <div style={{ display: "flex", gap: 10 }}>
         {item.filingLink ? (
           <a href={item.filingLink} target="_blank" rel="noreferrer" style={{ flex: 1, background: T.accentDim, color: T.accent, padding: "8px", borderRadius: 8, fontSize: 12, fontWeight: 700, textAlign: "center", textDecoration: "none", border: `1px solid ${T.accent}33`, transition: "all 0.2s ease" }}>
-            📋 View Filing ↗
+            📋 Direct Filing Link ↗
           </a>
         ) : (
           <div style={{ flex: 1, background: T.surface, color: T.muted, padding: "8px", borderRadius: 8, fontSize: 12, textAlign: "center", border: `1px solid ${T.border}` }}>
