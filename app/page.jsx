@@ -24,30 +24,25 @@ const IMPACT = {
   LOW: { color: T.low, bg: T.lowDim, icon: "🟢" } 
 };
 
-const formatIST = (d) => { 
-  try { 
-    if(!d) return "—";
-    return new Date(d).toLocaleString("en-IN", { 
-      timeZone: "Asia/Kolkata", month: "short", day: "numeric", 
-      hour: "2-digit", minute: "2-digit", hour12: true 
-    }) + " IST";
-  } catch { return "—"; } 
-};
-
 export default function IPORadar() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("radar"); 
   const [region, setRegion] = useState("all");
+  const [lastUpdated, setLastUpdated] = useState("");
 
-  const load = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
+  const load = useCallback(async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
-      const res = await fetch("/api/intel");
+      const res = await fetch(`/api/intel?t=${new Date().getTime()}`);
       if (!res.ok) throw new Error("Failed");
-      setData(await res.json());
+      const newData = await res.json();
+      if(newData && newData.confirmedIntelligence) {
+        setData(newData);
+        setLastUpdated(new Date().toLocaleTimeString());
+      }
     } catch (e) {
-      console.error(e);
+      console.error("Polling error:", e);
     } finally {
       setLoading(false);
     }
@@ -55,11 +50,11 @@ export default function IPORadar() {
 
   useEffect(() => { 
     load(); 
-    const rt = setInterval(() => load(true), 90000); 
+    // Auto-refresh every 3 minutes (180000ms)
+    const rt = setInterval(() => load(true), 180000); 
     return () => clearInterval(rt); 
   }, [load]);
 
-  // Robust filtering: convert AI region string to lowercase to guarantee a match
   const confirmed = (data?.confirmedIntelligence || []).filter(
     x => region === "all" || (x.region || "").toLowerCase() === region
   );
@@ -73,9 +68,11 @@ export default function IPORadar() {
       <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>
         <div>
           <div style={{ fontSize: 26, fontWeight: 900, color: T.accent, letterSpacing: 1, display: "flex", alignItems: "center", gap: 8 }}>
-            IPO RADAR <span style={{ color: T.text, background: T.accentDim, padding: "2px 8px", borderRadius: 6, fontSize: 14, letterSpacing: 0 }}>PRO</span>
+            IPO RADAR <span style={{ color: T.text, background: T.accentDim, padding: "2px 8px", borderRadius: 6, fontSize: 14 }}>PRO</span>
           </div>
-          <div style={{ fontSize: 11, color: T.muted, letterSpacing: 2, marginTop: 4 }}>INSTITUTIONAL EQUITY TERMINAL</div>
+          <div style={{ fontSize: 11, color: T.muted, letterSpacing: 2, marginTop: 4 }}>
+            GLOBAL EQUITY TERMINAL {lastUpdated && <span style={{color: T.liveGreen}}>• LIVE (Updated: {lastUpdated})</span>}
+          </div>
         </div>
         <div style={{ display: "flex", gap: 12, overflowX: "auto" }}>
           {["radar", "news_rumors", "focus"].map(t => (
@@ -83,9 +80,7 @@ export default function IPORadar() {
               background: activeTab === t ? (t === 'news_rumors' ? T.warningDim : T.accentDim) : "transparent", 
               color: activeTab === t ? (t === 'news_rumors' ? T.warning : T.accent) : T.muted,
               border: `1px solid ${activeTab === t ? (t === 'news_rumors' ? T.warning : T.accent) : T.border}`, 
-              padding: "10px 18px", borderRadius: 10,
-              fontSize: 12, fontWeight: 700, cursor: "pointer", textTransform: "uppercase",
-              transition: "all 0.3s ease", whiteSpace: "nowrap"
+              padding: "10px 18px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", textTransform: "uppercase", transition: "all 0.3s ease", whiteSpace: "nowrap"
             }}>
               {t === "radar" ? "Confirmed IPOs" : t === "news_rumors" ? "News & Rumors" : "⭐ Market Movers"}
             </button>
@@ -97,65 +92,53 @@ export default function IPORadar() {
       <div style={{ padding: 24, flex: 1, overflowY: "auto" }}>
         {loading && !data ? (
           <div style={{ color: T.accent, textAlign: "center", marginTop: 100, fontSize: 14, animation: "pulse 1.5s infinite" }}>
-            Establishing secure connection to global exchanges...
+            Deep-diving regulatory registries (EDGAR, SEBI, CNMV) for verified data...
           </div>
         ) : (
           <>
-            {/* TAB: CONFIRMED RADAR */}
             {activeTab === "radar" && (
               <div style={{ animation: "fadeUp 0.4s ease" }}>
                 <div style={{ display: "flex", gap: 10, marginBottom: 24, overflowX: "auto", paddingBottom: "10px" }}>
                   {REGIONS.map(r => (
-                    <button key={r.id} onClick={() => setRegion(r.id)} style={{ padding: "8px 16px", borderRadius: 20, border: `1px solid ${region === r.id ? T.accent : T.border}`, background: region === r.id ? T.accentDim : T.surface, color: region === r.id ? T.accent : T.sub, fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.2s" }}>
+                    <button key={r.id} onClick={() => setRegion(r.id)} style={{ padding: "8px 16px", borderRadius: 20, border: `1px solid ${region === r.id ? T.accent : T.border}`, background: region === r.id ? T.accentDim : T.surface, color: region === r.id ? T.accent : T.sub, fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
                       {r.flag} {r.label}
                     </button>
                   ))}
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 20 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(420px, 1fr))", gap: 20 }}>
                   {confirmed.map((item, i) => <DataCard key={i} item={item} />)}
                   {confirmed.length === 0 && <div style={{ color: T.muted, fontSize: 14 }}>No confirmed filings detected for this specific region currently.</div>}
                 </div>
               </div>
             )}
 
-            {/* TAB: NEWS & RUMOR MILL */}
             {activeTab === "news_rumors" && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 30, maxWidth: 800, margin: "0 auto", animation: "fadeUp 0.4s ease" }}>
                 <div>
-                  <h2 style={{ color: T.accent, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>📰 Global IPO News</h2>
+                  <h2 style={{ color: T.accent, marginBottom: 16 }}>📰 Global IPO Macro News</h2>
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                     {news.map((n, i) => (
                       <div key={i} style={{ background: `linear-gradient(145deg, ${T.cardTop}, ${T.cardBottom})`, padding: 18, borderRadius: 14, border: `1px solid ${T.borderHi}`, borderLeft: `4px solid ${T.accent}` }}>
                         <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 8 }}>{n.headline}</div>
-                        <div style={{ fontSize: 11, color: T.muted }}>Source: <span style={{ color: T.sub }}>{n.source}</span> · Impact: {n.impact}</div>
+                        <div style={{ fontSize: 11, color: T.muted }}>Source: <span style={{ color: T.sub }}>{n.source}</span></div>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <h2 style={{ color: T.warning, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>🤫 Unverified Rumors & Leaks</h2>
-                  <div style={{ fontSize: 12, color: T.sub, marginBottom: 16, background: T.warningDim, padding: 14, borderRadius: 10, border: `1px solid ${T.warning}55` }}>
-                    ⚠️ Data below has not been substantiated by official regulatory filings. Treat as highly speculative.
-                  </div>
+                  <h2 style={{ color: T.warning, marginBottom: 16 }}>🤫 Mega-Unicorn Rumor Mill</h2>
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    {rumors.map((r, i) => (
-                      <div key={i} style={{ background: `linear-gradient(145deg, ${T.cardTop}, ${T.cardBottom})`, padding: 18, borderRadius: 14, border: `1px solid ${T.borderHi}`, borderLeft: `4px solid ${T.warning}` }}>
-                        <div style={{ fontSize: 17, fontWeight: 900, color: T.text, marginBottom: 6 }}>{r.company}</div>
-                        <div style={{ fontSize: 14, color: T.sub, marginBottom: 10 }}>{r.headline}</div>
-                        <div style={{ fontSize: 11, color: T.muted }}>Source: <span style={{ color: T.sub }}>{r.source}</span> · Expected Impact: {r.impact}</div>
-                      </div>
-                    ))}
+                    {rumors.map((r, i) => <DataCard key={i} item={r} isRumor={true} />)}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* TAB: SPECIAL FOCUS */}
             {activeTab === "focus" && (
               <div style={{ animation: "fadeUp 0.4s ease" }}>
                 <h2 style={{ color: T.focus, textShadow: `0 0 15px ${T.focusDim}`, marginBottom: 24, fontSize: 22 }}>🚀 Market Movers</h2>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: 24 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(420px, 1fr))", gap: 24 }}>
                   {focusItems.map((item, i) => <DataCard key={i} item={item} specialFocus={true} />)}
                   {focusItems.length === 0 && <div style={{color: T.muted}}>No high-impact movers detected right now.</div>}
                 </div>
@@ -174,21 +157,24 @@ export default function IPORadar() {
   );
 }
 
-// Reusable Advanced Card Component
-function DataCard({ item, specialFocus = false }) {
+function DataCard({ item, specialFocus = false, isRumor = false }) {
   const imp = IMPACT[item.impact] || IMPACT.LOW;
-  const borderColor = specialFocus ? T.focus : T.borderHi;
+  const borderColor = isRumor ? T.warning : (specialFocus ? T.focus : T.borderHi);
   const sizeToDisplay = item.actualSize ? item.actualSize : `${item.estimatedSize || "TBD"} (Est.)`;
   
-  // Logic to determine if the IPO is actively live or pricing right now
   const isLive = item.stage && (item.stage.toLowerCase().includes("live") || item.stage.toLowerCase().includes("pricing"));
+  const m = item.milestones || {};
+  const f = item.latestFiling || {};
 
   return (
-    <div style={{ background: `linear-gradient(145deg, ${T.cardTop}, ${T.cardBottom})`, border: `1px solid ${borderColor}`, borderRadius: 16, padding: 22, boxShadow: specialFocus ? `0 8px 30px ${T.focusDim}` : "0 4px 15px rgba(0,0,0,0.3)", display: "flex", flexDirection: "column", transition: "transform 0.2s", cursor: "default" }}>
+    <div style={{ background: `linear-gradient(145deg, ${T.cardTop}, ${T.cardBottom})`, border: `1px solid ${borderColor}`, borderRadius: 16, padding: 22, boxShadow: specialFocus ? `0 8px 30px ${T.focusDim}` : "0 4px 15px rgba(0,0,0,0.3)", display: "flex", flexDirection: "column" }}>
+      
+      {/* HEADER */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 20, fontWeight: 900, color: T.text }}>{item.company}</div>
-          <div style={{ fontSize: 12, color: T.accent, marginTop: 4 }}>{item.sector} · {item.exchange}</div>
+          {!isRumor && <div style={{ fontSize: 12, color: T.accent, marginTop: 4 }}>{item.sector} · {item.exchange}</div>}
+          {isRumor && <div style={{ fontSize: 12, color: T.warning, marginTop: 4 }}>Source: {item.source}</div>}
         </div>
         
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
@@ -198,40 +184,31 @@ function DataCard({ item, specialFocus = false }) {
               LIVE NOW
             </div>
           )}
-          <span style={{ fontSize: 10, background: imp.bg, color: imp.color, padding: "4px 8px", borderRadius: 6, fontWeight: 800 }}>
-            {imp.icon} {item.stage}
-          </span>
+          {!isRumor && (
+            <span style={{ fontSize: 10, background: imp.bg, color: imp.color, padding: "4px 8px", borderRadius: 6, fontWeight: 800 }}>
+              {imp.icon} {item.stage}
+            </span>
+          )}
         </div>
       </div>
       
-      <div style={{ fontSize: 14, color: T.sub, lineHeight: 1.6, marginBottom: 20, flex: 1 }}>{item.headline}</div>
+      <div style={{ fontSize: 14, color: T.sub, lineHeight: 1.6, marginBottom: 20 }}>{item.headline}</div>
 
-      <div style={{ background: T.surface, borderRadius: 10, padding: 14, display: "flex", flexDirection: "column", gap: 10, marginBottom: 18, border: `1px solid ${T.border}` }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-          <span style={{ color: T.muted }}>Transaction Size</span>
-          <span style={{ color: item.actualSize ? T.low : T.med, fontWeight: 800 }}>{sizeToDisplay}</span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-          <span style={{ color: T.muted }}>Price Range</span>
-          <span style={{ color: T.text, fontWeight: 800 }}>{item.priceRange || "TBD"}</span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-          <span style={{ color: T.muted }}>Updated (IST)</span>
-          <span style={{ color: T.sub, fontWeight: 700 }}>{formatIST(item.publishedAt)}</span>
-        </div>
+      {/* MILESTONES SECTION */}
+      <div style={{ background: T.surface, borderRadius: 10, padding: 14, marginBottom: 14, border: `1px solid ${T.border}` }}>
+        <div style={{ fontSize: 11, color: T.accent, fontWeight: 800, marginBottom: 10, letterSpacing: 1 }}>TRANSACTION MILESTONES</div>
+        <TimelineRow label="📢 Announced" val={m.announced} />
+        <TimelineRow label="💰 Pricing Date" val={m.pricing} />
+        <TimelineRow label="🏁 Transaction Closed" val={m.closed} isLast />
       </div>
 
-      <div style={{ display: "flex", gap: 12 }}>
-        {item.filingLink ? (
-          <a href={item.filingLink} target="_blank" rel="noreferrer" style={{ flex: 1, background: T.accentDim, color: T.accent, padding: "10px", borderRadius: 10, fontSize: 12, fontWeight: 800, textAlign: "center", textDecoration: "none", border: `1px solid ${T.accent}44`, transition: "all 0.2s ease" }}>
-            📋 View Filing Details ↗
-          </a>
-        ) : (
-          <div style={{ flex: 1, background: T.surface, color: T.muted, padding: "10px", borderRadius: 10, fontSize: 12, textAlign: "center", border: `1px solid ${T.borderHi}`, fontWeight: 700 }}>
-            🔒 Awaiting Public Filing
+      {/* METRICS SECTION (Hidden for rumors) */}
+      {!isRumor && (
+        <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+          <div style={{ flex: 1, background: T.surface, padding: 10, borderRadius: 8, border: `1px solid ${T.border}` }}>
+            <div style={{ fontSize: 11, color: T.muted, marginBottom: 4 }}>Size</div>
+            <div style={{ fontSize: 13, color: item.actualSize ? T.low : T.med, fontWeight: 800 }}>{sizeToDisplay}</div>
           </div>
-        )}
-      </div>
-    </div>
-  );
-}
+          <div style={{ flex: 1, background: T.surface, padding: 10, borderRadius: 8, border: `1px solid ${T.border}` }}>
+            <div style={{ fontSize: 11, color: T.muted, marginBottom: 4 }}>Price Range</div>
+            <di
