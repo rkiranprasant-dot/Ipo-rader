@@ -211,4 +211,51 @@ function DataCard({ item, specialFocus = false, isRumor = false }) {
           </div>
           <div style={{ flex: 1, background: T.surface, padding: 10, borderRadius: 8, border: `1px solid ${T.border}` }}>
             <div style={{ fontSize: 11, color: T.muted, marginBottom: 4 }}>Price Range</div>
-            <di
+            <div style={{ fontSize: 13, color: T.text, fontWeight: 800 }}>{item.priceRange || "TBD"}</div>
+          </div>
+        </div>
+      )}
+
+      {/* COMPANY NEWS SECTION */}
+      {item.recentNews && item.recentNews.length > 0 && (
+        <div style={{ borderTop: `1px solid ${T.borderHi}`, paddingTop: 14, marginBottom: 18 }}>
+          <div style={{ fontSize: 11, color: T.muted, fontWeight: 700, marginBottom: 8 }}>LATEST COMPANY NEWS</div>
+          {item.recentNews.map((news, idx) => (
+            <div key={idx} style={{ display: "flex", gap: 8, fontSize: 12 }}>
+              <span style={{ color: T.accent, whiteSpace: "nowrap" }}>{news.date}</span>
+              <span style={{ color: T.sub }}>{news.headline}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* DYNAMIC LATEST FILING LINK */}
+      <div style={{ marginTop: "auto" }}>
+        {f.url ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ fontSize: 11, color: T.muted, textAlign: "center" }}>
+              Latest Reg Filing: <span style={{ color: T.text, fontWeight: 700 }}>{f.type}</span> ({f.date})
+            </div>
+            <a href={f.url} target="_blank" rel="noreferrer" style={{ display: "block", width: "100%", background: T.accentDim, color: T.accent, padding: "10px", borderRadius: 10, fontSize: 12, fontWeight: 800, textAlign: "center", textDecoration: "none", border: `1px solid ${T.accent}44`, transition: "all 0.2s ease" }}>
+              📋 View Direct Filing ↗
+            </a>
+          </div>
+        ) : (
+          <div style={{ width: "100%", background: T.surface, color: T.muted, padding: "10px", borderRadius: 10, fontSize: 12, textAlign: "center", border: `1px solid ${T.borderHi}`, fontWeight: 700 }}>
+            🔒 No Public Filing Available Yet
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TimelineRow({ label, val, isLast = false }) {
+  const isTBD = !val || val === "TBD" || val.includes("Expected");
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: isLast ? 0 : 6 }}>
+      <span style={{ color: T.muted }}>{label}</span>
+      <span style={{ color: isTBD ? T.muted : T.text, fontWeight: isTBD ? 400 : 700 }}>{val || "TBD"}</span>
+    </div>
+  );
+}
