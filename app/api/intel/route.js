@@ -15,7 +15,7 @@ export async function GET() {
     const prompt = `Act as an elite institutional-grade financial terminal mapping real-time equity developments. 
     Synthesize exactly 4 highly distinct, highly detailed, realistic corporate catalyst events occurring globally for today's market session.
     
-    You MUST respond with a valid JSON object matching this blueprint syntax exactly. Do not wrap code blocks in backticks, do not include markdown, and write zero conversational text. Just return pure parseable JSON text matching this exact layout structure:
+    You MUST respond with a valid JSON object matching this blueprint syntax exactly. Do not wrap code blocks in backticks, do not include markdown, and write zero conversational text. Just return pure valid JSON:
     {
       "breakingIntelligence": [
         {
@@ -80,9 +80,32 @@ export async function GET() {
     }
 
     const data = await res.json();
-    const rawText = data.candidates[0].content.parts[0].text;
     
-    return NextResponse.json(JSON.parse(rawText));
+    // Validate response structure
+    if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
+      return NextResponse.json({ error: "Invalid API response structure: no candidates found" }, { status: 500 });
+    }
+
+    const candidate = data.candidates[0];
+    if (!candidate.content || !candidate.content.parts || !Array.isArray(candidate.content.parts) || candidate.content.parts.length === 0) {
+      return NextResponse.json({ error: "Invalid API response structure: no content parts found" }, { status: 500 });
+    }
+
+    const rawText = candidate.content.parts[0].text;
+    if (!rawText) {
+      return NextResponse.json({ error: "Invalid API response: empty text content" }, { status: 500 });
+    }
+
+    // Parse and validate JSON
+    let parsedData;
+    try {
+      parsedData = JSON.parse(rawText);
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError, "Raw text:", rawText);
+      return NextResponse.json({ error: "Failed to parse API response as JSON" }, { status: 500 });
+    }
+    
+    return NextResponse.json(parsedData);
 
   } catch (error) {
     console.error("API Gateway processing failure:", error);
