@@ -1,6 +1,6 @@
 "use client";
-export const dynamic = "force-dynamic"; // Add this line!
 import { useState, useEffect, useCallback } from "react";
+
 const T = { 
   bg: "#05050A", surface: "#0A0A14", card: "#12121D", cardHover: "#1A1A2A", 
   border: "#232336", borderHi: "#3A3A5A", text: "#FFFFFF", sub: "#A1A1B5", 
@@ -37,7 +37,7 @@ const formatIST = (d) => {
 export default function IPORadar() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("radar"); // 'radar', 'rumors', 'focus'
+  const [activeTab, setActiveTab] = useState("radar"); // 'radar', 'news_rumors', 'focus'
   const [region, setRegion] = useState("all");
 
   const load = useCallback(async (silent = false) => {
@@ -61,6 +61,7 @@ export default function IPORadar() {
 
   const confirmed = (data?.confirmedIntelligence || []).filter(x => region === "all" || x.region === region);
   const rumors = data?.rumorMill || [];
+  const news = data?.latestNews || [];
   const focusItems = (data?.confirmedIntelligence || []).filter(x => x.impact === "HIGH" || x.isSpecialFocus);
 
   return (
@@ -74,16 +75,16 @@ export default function IPORadar() {
           <div style={{ fontSize: 11, color: T.muted, letterSpacing: 2, marginTop: 4 }}>INSTITUTIONAL TERMINAL</div>
         </div>
         <div style={{ display: "flex", gap: 12 }}>
-          {["radar", "rumors", "focus"].map(t => (
+          {["radar", "news_rumors", "focus"].map(t => (
             <button key={t} onClick={() => setActiveTab(t)} style={{
-              background: activeTab === t ? (t === 'rumors' ? T.warningDim : T.accentDim) : "transparent", 
-              color: activeTab === t ? (t === 'rumors' ? T.warning : T.accent) : T.muted,
-              border: `1px solid ${activeTab === t ? (t === 'rumors' ? T.warning : T.accent) : T.border}`, 
+              background: activeTab === t ? (t === 'news_rumors' ? T.warningDim : T.accentDim) : "transparent", 
+              color: activeTab === t ? (t === 'news_rumors' ? T.warning : T.accent) : T.muted,
+              border: `1px solid ${activeTab === t ? (t === 'news_rumors' ? T.warning : T.accent) : T.border}`, 
               padding: "8px 16px", borderRadius: 8,
               fontSize: 12, fontWeight: 700, cursor: "pointer", textTransform: "uppercase",
               transition: "all 0.2s ease"
             }}>
-              {t === "radar" ? "Confirmed Filings" : t === "rumors" ? "Rumor Mill" : "⭐ Market Movers"}
+              {t === "radar" ? "Confirmed IPOs" : t === "news_rumors" ? "News & Rumors" : "⭐ Market Movers"}
             </button>
           ))}
         </div>
@@ -93,7 +94,7 @@ export default function IPORadar() {
       <div style={{ padding: 24, flex: 1, overflowY: "auto" }}>
         {loading && !data ? (
           <div style={{ color: T.accent, textAlign: "center", marginTop: 100, fontSize: 14, animation: "pulse 1.5s infinite" }}>
-            Scanning global exchanges, executing web searches, and analyzing EDGAR filings...
+            Scanning global exchanges and analyzing IPO filings...
           </div>
         ) : (
           <>
@@ -114,21 +115,40 @@ export default function IPORadar() {
               </div>
             )}
 
-            {/* TAB: RUMOR MILL */}
-            {activeTab === "rumors" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, maxWidth: 800, margin: "0 auto", animation: "fadeUp 0.4s ease" }}>
-                <h2 style={{ color: T.warning, marginBottom: 12 }}>Unverified Rumors & Leaks</h2>
-                <div style={{ fontSize: 12, color: T.sub, marginBottom: 16, background: T.warningDim, padding: 12, borderRadius: 8, border: `1px solid ${T.warning}55` }}>
-                  ⚠️ Data below has not been substantiated by official regulatory filings. Treat as highly speculative.
-                </div>
-                {rumors.map((r, i) => (
-                  <div key={i} style={{ background: T.surface, padding: 16, borderRadius: 12, borderLeft: `4px solid ${T.warning}` }}>
-                    <div style={{ fontSize: 16, fontWeight: 900, color: T.text, marginBottom: 4 }}>{r.company}</div>
-                    <div style={{ fontSize: 13, color: T.sub, marginBottom: 8 }}>{r.headline}</div>
-                    <div style={{ fontSize: 11, color: T.muted }}>Source: <span style={{ color: T.text }}>{r.source}</span> · Expected Impact: {r.impact}</div>
+            {/* TAB: NEWS & RUMOR MILL */}
+            {activeTab === "news_rumors" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 24, maxWidth: 800, margin: "0 auto", animation: "fadeUp 0.4s ease" }}>
+                
+                {/* LATEST NEWS */}
+                <div>
+                  <h2 style={{ color: T.accent, marginBottom: 12 }}>Global IPO News</h2>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {news.map((n, i) => (
+                      <div key={i} style={{ background: T.surface, padding: 16, borderRadius: 12, borderLeft: `4px solid ${T.accent}` }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 8 }}>{n.headline}</div>
+                        <div style={{ fontSize: 11, color: T.muted }}>Source: <span style={{ color: T.text }}>{n.source}</span> · Impact: {n.impact}</div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-                {rumors.length === 0 && <div style={{ color: T.muted }}>The rumor mill is quiet right now.</div>}
+                </div>
+
+                {/* RUMORS */}
+                <div>
+                  <h2 style={{ color: T.warning, marginBottom: 12 }}>Unverified Rumors & Leaks</h2>
+                  <div style={{ fontSize: 12, color: T.sub, marginBottom: 16, background: T.warningDim, padding: 12, borderRadius: 8, border: `1px solid ${T.warning}55` }}>
+                    ⚠️ Data below has not been substantiated by official regulatory filings. Treat as highly speculative.
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {rumors.map((r, i) => (
+                      <div key={i} style={{ background: T.surface, padding: 16, borderRadius: 12, borderLeft: `4px solid ${T.warning}` }}>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: T.text, marginBottom: 4 }}>{r.company}</div>
+                        <div style={{ fontSize: 13, color: T.sub, marginBottom: 8 }}>{r.headline}</div>
+                        <div style={{ fontSize: 11, color: T.muted }}>Source: <span style={{ color: T.text }}>{r.source}</span> · Expected Impact: {r.impact}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </div>
             )}
 
