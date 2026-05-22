@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 
+// CRITICAL FIX: Forces Vercel to run this API dynamically on every request 
+// instead of caching the first result.
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
+
     if (!apiKey) {
       return NextResponse.json({ error: "API Key missing in configuration parameters" }, { status: 500 });
     }
@@ -49,7 +54,6 @@ export async function GET() {
         "live": ["Hyundai Motor India Trade Book"]
       }
     }
-
     Ensure your generated macro elements mix fields cleanly across:
     - regions: us, india, eu, uk, me, asia, latam
     - stages: Rumored, Confidential, Filed, Roadshow, Pricing, 424B4/Live, Listed
