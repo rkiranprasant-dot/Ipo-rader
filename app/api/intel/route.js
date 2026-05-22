@@ -4,33 +4,57 @@ export async function GET() {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: "API key missing in Vercel settings" }, { status: 500 });
+      return NextResponse.json({ error: "API Key missing in configuration parameters" }, { status: 500 });
     }
 
-    // This is the clean prompt structure the AI expects
-    const prompt = `Provide global IPO intelligence. Return a valid JSON object matching this structure exactly:
+    const prompt = `Act as an elite institutional-grade financial terminal mapping real-time equity developments. 
+    Synthesize exactly 4 highly distinct, highly detailed, realistic corporate catalyst events occurring globally for today's market session.
+    
+    You MUST respond with a valid JSON object matching this blueprint syntax exactly. Do not wrap code blocks in backticks, do not include markdown, and write zero conversational text. Just return pure parseable JSON text matching this exact layout structure:
     {
       "breakingIntelligence": [
         {
-          "company": "Example Corp",
-          "headline": "Filing officially submitted",
-          "detail": "Detailed market breakdown",
-          "impact": "HIGH",
-          "stage": "Filed",
-          "region": "us",
+          "company": "Institutional Asset Name (e.g. Swiggy, Hyundai India, Starlink)",
+          "headline": "Actionable major structural market catalyst description",
+          "detail": "Deep professional briefing mapping specific compliance targets, valuation adjustments, regulatory review criteria, and lead desk indicators.",
+          "impact": "HIGH", 
+          "stage": "Pricing",
+          "region": "india",
           "transactionType": "IPO",
-          "source": "SEC EDGAR",
-          "publishedAt": "Just now"
+          "source": "SEBI Terminal / Reuters",
+          "publishedAt": "2026-05-22T12:00:00Z",
+          "estimatedSize": "₹11,500 Cr",
+          "estimatedValuation": "₹83,000 Cr",
+          "priceRange": "₹375 - ₹390",
+          "exchange": "NSE · BSE",
+          "sector": "Consumer / Technology",
+          "keyDate": "May 25"
         }
       ],
-      "latestNews": [],
+      "latestNews": [
+        { "headline": "Fast tape transaction alert string summary", "impact": "MEDIUM", "region": "us", "source": "Bloomberg" },
+        { "headline": "Cross-border secondary market distribution executed via institutional blocks", "impact": "LOW", "region": "eu", "source": "Euronext" }
+      ],
       "regionSummary": {
-        "us": { "active": 0, "hot": "summary" }
+        "us": { "active": 3, "totalPipeline": "42 Draft Registration Statements Pending", "hot": "Sustained high tech sector pricing volume" },
+        "india": { "active": 5, "totalPipeline": "24 DRHP Filings Pending Under Review", "hot": "Unprecedented retail capitalization momentum peaks" },
+        "eu": { "active": 1, "totalPipeline": "11 Prospectus Files Issued", "hot": "Renewed luxury sector capitalization activity" }
       },
       "stagePipeline": {
-        "rumored": [], "confidential": [], "filed": [], "roadshow": [], "pricing": [], "live": []
+        "rumored": ["Ola Electric (₹6,200Cr)", "Zepto ($4B Spinoff)"],
+        "confidential": ["Stripe Inc ($55B Flagship Filing)"],
+        "filed": ["NTPC Green Energy (₹10,000Cr)"],
+        "roadshow": ["Affirm Europe Block"],
+        "pricing": ["Swiggy Institutional Tranche"],
+        "live": ["Hyundai Motor India Trade Book"]
       }
-    }`;
+    }
+
+    Ensure your generated macro elements mix fields cleanly across:
+    - regions: us, india, eu, uk, me, asia, latam
+    - stages: Rumored, Confidential, Filed, Roadshow, Pricing, 424B4/Live, Listed
+    - transactionTypes: IPO, SPAC, Direct Listing, Spin-off, Secondary
+    - impacts: HIGH, MEDIUM, LOW`;
 
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
@@ -41,23 +65,23 @@ export async function GET() {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.2
+            temperature: 0.7
           }
         })
       }
     );
 
     if (!res.ok) {
-      throw new Error(`Google API responded with status ${res.status}`);
+      return NextResponse.json({ error: `Upstream connection returned exception status ${res.status}` }, { status: res.status });
     }
 
     const data = await res.json();
-    const text = data.candidates[0].content.parts[0].text;
+    const rawText = data.candidates[0].content.parts[0].text;
     
-    return NextResponse.json(JSON.parse(text));
+    return NextResponse.json(JSON.parse(rawText));
 
   } catch (error) {
-    console.error("Fetch error:", error);
-    return NextResponse.json({ error: "Failed to generate intelligence data" }, { status: 500 });
+    console.error("API Gateway processing failure:", error);
+    return NextResponse.json({ error: "System failed to unpack pipeline stream data parameters" }, { status: 500 });
   }
 }
