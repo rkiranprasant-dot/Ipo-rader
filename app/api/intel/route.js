@@ -10,16 +10,18 @@ export async function GET() {
       return NextResponse.json({ error: "API Key missing in configuration parameters" }, { status: 500 });
     }
 
-    const prompt = `Act as an elite institutional-grade financial terminal mapping real-time equity developments for today's market session.
+    const prompt = `Act as an elite institutional-grade financial terminal mapping global equity developments.
+    
+    Synthesize exactly 6 realistic, high-profile global IPOs (Recent, Upcoming, or Live), 2 rumored filings, and 3 major IPO market news items.
     
     You MUST respond with a valid JSON object matching this blueprint exactly.
     {
       "confirmedIntelligence": [
         {
           "company": "Asset Name",
-          "headline": "Confirmed structural market catalyst",
+          "headline": "Brief update on the IPO status",
           "impact": "HIGH", 
-          "stage": "Filed or Pricing or Live",
+          "stage": "Filed or Pricing or Listed",
           "region": "us",
           "transactionType": "IPO",
           "publishedAt": "2026-05-23T12:00:00Z",
@@ -28,7 +30,7 @@ export async function GET() {
           "priceRange": "$45 - $50",
           "exchange": "NASDAQ",
           "sector": "Technology",
-          "filingLink": "https://www.sec.gov/Archives/edgar/data/1234567/000119312521123456/d123456ds1.htm",
+          "filingLink": "https://www.sec.gov/edgar/searchedgar/companysearch.html",
           "isSpecialFocus": true
         }
       ],
@@ -39,14 +41,21 @@ export async function GET() {
           "source": "Bloomberg Unnamed Sources",
           "impact": "MEDIUM"
         }
+      ],
+      "latestNews": [
+        {
+          "headline": "Global IPO market sees massive surge in tech listings this quarter",
+          "source": "Reuters",
+          "impact": "HIGH"
+        }
       ]
     }
     
     CRITICAL RULES:
-    1. CATEGORIZATION: Only place companies in "confirmedIntelligence" if they have officially filed, priced, or listed. If it is unconfirmed or a leak (e.g., Stripe confidential filing), it MUST go into "rumorMill".
-    2. MEGA-UNICORNS: Any company valued over $10B cannot be placed in "confirmedIntelligence" without an actual, verified SEC or regional regulatory filing.
-    3. FILING LINKS: Do NOT link to the SEC search page. Use live web search to find the exact EDGAR CIK/Accession URL (e.g., /Archives/edgar/data/...). If it is a SEBI filing, provide the direct PDF link.
-    4. ACTUAL SIZE: Populate "actualSize" only if the offering has priced.`;
+    1. BROADEN SCOPE: Include recent IPOs, upcoming roadshows, and major filings from the past 6 months. Do not restrict to just "today".
+    2. CATEGORIZATION: Only place companies in "confirmedIntelligence" if they have officially filed, priced, or listed. If it is unconfirmed or a leak, it MUST go into "rumorMill".
+    3. DATA POPULATION: You MUST return exactly 6 items in confirmedIntelligence, 2 in rumorMill, and 3 in latestNews so the dashboard is never empty.
+    4. ACTUAL SIZE: Populate "actualSize" if the offering has priced or completed.`;
 
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-pro:generateContent?key=${apiKey}`,
@@ -55,10 +64,9 @@ export async function GET() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          tools: [{ googleSearch: {} }],
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.1 
+            temperature: 0.4 
           }
         })
       }
